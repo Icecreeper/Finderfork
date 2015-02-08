@@ -13,6 +13,8 @@ import java.util.Comparator;
 import javax.swing.Icon;
 import javax.vecmath.Point3d;
 
+import net.minecraft.client.renderer.WorldRenderer;
+import net.minecraft.util.BlockPos;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
@@ -23,14 +25,13 @@ import org.lwjgl.util.vector.Vector3f;
 
 import sun.awt.windows.ThemeReader;
 
-import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XsiNilLoader.Array;
-
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.client.renderer.texture.ITextureObject;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
@@ -51,9 +52,9 @@ import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.common.gameevent.PlayerEvent.ItemPickupEvent;
-import cpw.mods.fml.common.gameevent.TickEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.PlayerEvent.ItemPickupEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 
 
@@ -134,7 +135,7 @@ public class FM_Events {
 							
 							if (tmpTEL.get(x).toString().toLowerCase().contains(FinderMod.instance.myGuiHandeler._MyGui.searchName.toLowerCase()) == true)					
 							{
-								FM_Point3d tmp = new FM_Point3d(((TileEntity)tmpTEL.get(x)).xCoord, ((TileEntity)tmpTEL.get(x)).yCoord, ((TileEntity)tmpTEL.get(x)).zCoord);
+								FM_Point3d tmp = new FM_Point3d(((TileEntity)tmpTEL.get(x)).getPos().getX(), ((TileEntity)tmpTEL.get(x)).getPos().getY(), ((TileEntity)tmpTEL.get(x)).getPos().getZ());
 								tmp.block = true;
 								this.tmpDrawersList.add(tmp);
 							}
@@ -150,9 +151,10 @@ public class FM_Events {
 					    		{
 					        		for(int z = -this.range; z< this.range + 1;z++)
 					        		{
-										if (theWorld.getBlock((int)FinderMod.instance.thePlayer.posX + x, y, (int)FinderMod.instance.thePlayer.posZ + z).getUnlocalizedName().toString().toLowerCase().contains(FinderMod.instance.myGuiHandeler._MyGui.searchName.toLowerCase()) == true)					
+                                        BlockPos blockPos = new BlockPos((int)FinderMod.instance.thePlayer.posX + x, y, (int)FinderMod.instance.thePlayer.posZ + z);
+                                        if (theWorld.getChunkFromBlockCoords(blockPos).getBlock(blockPos).getUnlocalizedName().toString().toLowerCase().contains(FinderMod.instance.myGuiHandeler._MyGui.searchName.toLowerCase()) == true)
 										{        				
-											FM_Point3d tmp = new FM_Point3d((int)FinderMod.instance.thePlayer.posX + x, y, (int)FinderMod.instance.thePlayer.posZ + z);
+											FM_Point3d tmp = new FM_Point3d(blockPos.getX(),blockPos.getY(),blockPos.getZ());
 											
 					        				if (tmp != null)
 					        				{
@@ -186,8 +188,8 @@ public class FM_Events {
 	    		{
 	        		for(int z = -this.range; z< this.range + 1;z++)
 	        		{
-	        			
-	        			if (Block.getIdFromBlock(theWorld.getBlock((int)FinderMod.instance.thePlayer.posX + x, y, (int)FinderMod.instance.thePlayer.posZ + z)) == Find)            				
+                        BlockPos blockPos = new BlockPos((int)FinderMod.instance.thePlayer.posX + x, y, (int)FinderMod.instance.thePlayer.posZ + z);
+	        			if (Block.getIdFromBlock(theWorld.getChunkFromBlockCoords(blockPos).getBlock(blockPos)) == Find)
 	        			{	        				
 	        				FM_Point3d tmp = new FM_Point3d((int)FinderMod.instance.thePlayer.posX + x, y, (int)FinderMod.instance.thePlayer.posZ + z);
 	        				if (tmp != null)
@@ -299,7 +301,7 @@ public class FM_Events {
 			// TODO Auto-generated catch block
 			try {
 				
-				NameP = Minecraft.getMinecraft().func_147104_D().serverIP;
+				NameP = Minecraft.getMinecraft().getCurrentServerData().serverIP;
 				return "Multi_" + NameP + ".dat";
 			} catch (Exception e1) {
 				// TODO Auto-generated catch block
@@ -318,10 +320,10 @@ public class FM_Events {
     	{
 	    	if(Minecraft.getMinecraft().currentScreen == null)
 	    	{
-	    		if (getSearchingFor().equalsIgnoreCase("nothing") == false)
+	    		if (getSearchingFor().equalsIgnoreCase("Nothing") == false)
 	    		{
-	    			ScaledResolution scaledresolution = new ScaledResolution(Minecraft.getMinecraft().gameSettings, Minecraft.getMinecraft().displayWidth, Minecraft.getMinecraft().displayHeight);
-	    			FontRenderer fontrenderer = Minecraft.getMinecraft().fontRenderer;
+	    			ScaledResolution scaledresolution = new ScaledResolution(Minecraft.getMinecraft(), Minecraft.getMinecraft().displayWidth, Minecraft.getMinecraft().displayHeight);
+	    			FontRenderer fontrenderer = Minecraft.getMinecraft().fontRendererObj;
 	    			int width = scaledresolution.getScaledWidth();
 	    			int height = scaledresolution.getScaledHeight();
 	    			fontrenderer.drawStringWithShadow(this._FoundCount +  "/100", width/2 - 10, 10, 0xffffffff);
@@ -380,22 +382,24 @@ public class FM_Events {
 	private void drawAroundBlock(FM_Point3d myPoint3d ) {
 		if (myPoint3d.block == true)
 		{
-			final Block blockb = FinderMod.instance.theWorld.getBlock(myPoint3d.x(), myPoint3d.y(), myPoint3d.z());
+			BlockPos blockPos = new BlockPos(myPoint3d.x(), myPoint3d.y(), myPoint3d.z());
+            final Block blockb = FinderMod.instance.theWorld.getChunkFromBlockCoords(blockPos).getBlock(blockPos);
 			if( Block.getIdFromBlock( blockb ) != 0) {
 
-				drawESP( AxisAlignedBB.getBoundingBox( myPoint3d.x, myPoint3d.y,myPoint3d.z,
+				drawESP( new AxisAlignedBB( myPoint3d.x, myPoint3d.y,myPoint3d.z,
 						myPoint3d.x + 1.0f, myPoint3d.y + 1.0f,myPoint3d.z + 1.0f ), myPoint3d.r, myPoint3d.g, myPoint3d.b );
 			}
 		}
 		else
-		{				drawESP( AxisAlignedBB.getBoundingBox( myPoint3d.x - 0.5f, myPoint3d.y,myPoint3d.z - 0.5f,
+		{				drawESP(new AxisAlignedBB( myPoint3d.x - 0.5f, myPoint3d.y,myPoint3d.z - 0.5f,
 				myPoint3d.x + 0.5f, myPoint3d.y + 1.0f,myPoint3d.z + 0.5f ), myPoint3d.r, myPoint3d.g, myPoint3d.b );
 			
 		}
 	}
 
     public void drawESP( final AxisAlignedBB bb, final double r, final double g, final double b )  {
-		Minecraft.getMinecraft( ).entityRenderer.disableLightmap( 0 );
+		Minecraft.getMinecraft( ).entityRenderer.disableLightmap(/* 0 */);
+
 		GL11.glPushMatrix( );
 		GL11.glEnable( 3042 );
 		GL11.glBlendFunc( 770, 771 );
@@ -409,127 +413,128 @@ public class FM_Events {
 		drawBoundingBox( bb );
 		GL11.glColor4d( r, g, b, 1.0F );
 		drawOutlinedBoundingBox( bb );
+        GL11.glColor4d( 255, 255, 255, 0.5F );
+        GL11.glDepthMask( true );
 		GL11.glLineWidth( 2.0F );
+        GL11.glEnable( 2929 );
 		GL11.glDisable( GL11.GL_LINE_SMOOTH );
 		GL11.glEnable( GL11.GL_TEXTURE_2D );
 		GL11.glEnable( GL11.GL_LIGHTING );
-		GL11.glEnable( 2929 );
-		GL11.glDepthMask( true );
 		GL11.glDisable( 3042 );
 		GL11.glPopMatrix( );
 		
-		Minecraft.getMinecraft( ).entityRenderer.enableLightmap( 0 );
+		Minecraft.getMinecraft( ).entityRenderer.enableLightmap(/* 0 */);
 	}
     public static void drawBoundingBox( final AxisAlignedBB axisalignedbb ) {
-		final Tessellator tessellator = Tessellator.instance;
-
-		tessellator.startDrawingQuads( ); // starts x
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
+		final Tessellator tessellator = Tessellator.getInstance();
+        final WorldRenderer worldRenderer = tessellator.getWorldRenderer();
+		worldRenderer.startDrawingQuads( ); // starts x
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
 		tessellator.draw( );
-		tessellator.startDrawingQuads( );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
+		worldRenderer.startDrawingQuads( );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
 		tessellator.draw( ); // ends x
-		tessellator.startDrawingQuads( ); // starts y
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
+		worldRenderer.startDrawingQuads( ); // starts y
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
 		tessellator.draw( );
-		tessellator.startDrawingQuads( );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
+		worldRenderer.startDrawingQuads( );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
 		tessellator.draw( ); // ends y
-		tessellator.startDrawingQuads( ); // starts z
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
+		worldRenderer.startDrawingQuads( ); // starts z
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
 		tessellator.draw( );
-		tessellator.startDrawingQuads( );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		tessellator.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
+		worldRenderer.startDrawingQuads( );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		worldRenderer.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
 		tessellator.draw( ); // ends z
 	}
 
@@ -537,50 +542,52 @@ public class FM_Events {
 	 * Draws lines for the edges of the bounding box.
 	 */
 	public static void drawOutlinedBoundingBox( final AxisAlignedBB axisalignedbb ) {
-		final Tessellator var2 = Tessellator.instance;
-		var2.startDrawing( 3 );
-		var2.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		var2.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		var2.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		var2.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		var2.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
+		final Tessellator var2 = Tessellator.getInstance();
+        final WorldRenderer var3 = var2.getWorldRenderer();
+		var3.startDrawing( 3 );
+		var3.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		var3.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		var3.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		var3.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		var3.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
 		var2.draw( );
-		var2.startDrawing( 3 );
-		var2.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		var2.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		var2.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		var2.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		var2.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
+		var3.startDrawing( 3 );
+		var3.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		var3.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		var3.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		var3.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		var3.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
 		var2.draw( );
-		var2.startDrawing( 1 );
-		var2.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		var2.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		var2.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		var2.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.minZ - RenderManager.renderPosZ );
-		var2.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		var2.addVertex( axisalignedbb.maxX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		var2.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.minY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
-		var2.addVertex( axisalignedbb.minX - RenderManager.renderPosX, axisalignedbb.maxY
-				- RenderManager.renderPosY, axisalignedbb.maxZ - RenderManager.renderPosZ );
+		var3.startDrawing( 1 );
+		var3.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		var3.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		var3.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		var3.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.minZ - TileEntityRendererDispatcher.staticPlayerZ );
+		var3.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		var3.addVertex( axisalignedbb.maxX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		var3.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.minY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
+		var3.addVertex( axisalignedbb.minX - TileEntityRendererDispatcher.staticPlayerX, axisalignedbb.maxY
+				- TileEntityRendererDispatcher.staticPlayerY, axisalignedbb.maxZ - TileEntityRendererDispatcher.staticPlayerZ );
 		var2.draw( );
 	}
+    @Deprecated
     @SubscribeEvent
     public void SomethingPickedup(ItemPickupEvent event)
     {

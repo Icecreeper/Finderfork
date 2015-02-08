@@ -23,7 +23,7 @@ import org.lwjgl.opengl.GL11;
 import com.google.gson.Gson;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.EntityClientPlayerMP;
+import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.Tessellator;
@@ -36,25 +36,25 @@ import net.minecraft.util.IChatComponent;
 import net.minecraft.world.World;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
-import cpw.mods.fml.client.FMLClientHandler;
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.Mod;
-import cpw.mods.fml.common.Mod.EventHandler;
-import cpw.mods.fml.common.Mod.Instance;
-import cpw.mods.fml.common.SidedProxy;
-import cpw.mods.fml.common.event.FMLInitializationEvent;
-import cpw.mods.fml.common.eventhandler.Event;
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.common.network.NetworkRegistry;
-import cpw.mods.fml.server.FMLServerHandler;
+import net.minecraftforge.fml.client.FMLClientHandler;
+import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.Mod.EventHandler;
+import net.minecraftforge.fml.common.Mod.Instance;
+import net.minecraftforge.fml.common.SidedProxy;
+import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import net.minecraftforge.fml.common.eventhandler.Event;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.network.NetworkRegistry;
+import net.minecraftforge.fml.server.FMLServerHandler;
 
 @Mod(modid = FinderMod.MODID, version = FinderMod.VERSION)
 public class FinderMod {
 	
 	private FM_NBTTags MyNBTSetting;
     public static final String MODID = "Finder Mod";
-    public static final String VERSION = "1.2.172";
-    public EntityClientPlayerMP thePlayer;
+    public static final String VERSION = "1.0.18";
+    public EntityPlayerSP thePlayer;
     public World theWorld;
     
     @Instance(value = MODID)
@@ -75,14 +75,14 @@ public class FinderMod {
     public int[] NumberforN = new int[2];
     
     
-    @SidedProxy(clientSide = "net.applebyfamily.freethemice.ClientProxy", serverSide = "net.applebyfamily.freethemice.CommonProxy")
+    //@SidedProxy(clientSide = "net.applebyfamily.freethemice.ClientProxy", serverSide = "net.applebyfamily.freethemice.CommonProxy")
     public static ClientProxy proxy;
 
 
     public void sendChatMessage(String textout)
     {
    	
-    	IChatComponent GoinOut =IChatComponent.Serializer.func_150699_a("FinderMod");
+    	IChatComponent GoinOut =IChatComponent.Serializer.jsonToComponent("FinderMod");
     	GoinOut.appendText(": " + textout);
 
     	Minecraft.getMinecraft().ingameGUI.getChatGUI().printChatMessage(GoinOut);
@@ -176,7 +176,7 @@ public class FinderMod {
 					if (MC.theWorld != null)
 					{
 						 theWorld = MC.theWorld;
-						 mainDraw = Tessellator.instance;
+						 mainDraw = Tessellator.getInstance();
 					}
 				}
 				

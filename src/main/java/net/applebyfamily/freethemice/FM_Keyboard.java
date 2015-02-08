@@ -14,11 +14,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.ChatComponentStyle;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.ChatStyle;
-import net.minecraft.util.IChatComponent;
-import net.minecraft.util.MovingObjectPosition;
+import net.minecraft.util.*;
 
 import org.lwjgl.input.Keyboard;
 
@@ -51,7 +47,7 @@ public class FM_Keyboard {
 			{
 				_iskeydown_B = true;
 				MovingObjectPosition pos = FinderMod.MC.objectMouseOver;
-				Block tmpPOS = FinderMod.MC.theWorld.getBlock(pos.blockX, pos.blockY, pos.blockZ);
+				Block tmpPOS = FinderMod.MC.theWorld.getChunkFromBlockCoords(pos.getBlockPos()).getBlock(pos.getBlockPos());
 				String blockID = tmpPOS.getUnlocalizedName().replace("item.", "").replace("tile.", "");
 				FinderMod.instance.myGuiHandeler._MyGui.textfield.setText(blockID + "");
 				FinderMod.instance.myGuiHandeler._MyGui._takeInput = false;

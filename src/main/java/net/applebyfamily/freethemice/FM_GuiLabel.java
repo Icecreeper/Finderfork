@@ -8,7 +8,7 @@ import net.minecraft.client.gui.GuiTextField;
 public class FM_GuiLabel extends GuiTextField {
 
 	public FM_GuiLabel(FontRenderer par1FontRenderer, int x, int y) {
-		super(par1FontRenderer, x, y, 50000, 20);
+		super(892, par1FontRenderer, x, y, 50000, 20);
 	    this.setFocused(false);
 	    this.setEnabled(false);
 	    this.setEnableBackgroundDrawing(false);
