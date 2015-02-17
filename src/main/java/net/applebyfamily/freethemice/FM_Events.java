@@ -16,7 +16,7 @@ import javax.vecmath.Point3d;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.util.BlockPos;
 import org.lwjgl.input.Keyboard;
-import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GLStateManager;
 
 
 import org.lwjgl.util.vector.Vector3f;
@@ -400,28 +400,28 @@ public class FM_Events {
     public void drawESP( final AxisAlignedBB bb, final double r, final double g, final double b )  {
 		Minecraft.getMinecraft( ).entityRenderer.disableLightmap(/* 0 */);
 
-		GL11.glPushMatrix( );
-		GL11.glEnable( 3042 );
-		GL11.glBlendFunc( 770, 771 );
-		GL11.glLineWidth( 1.5F );
-		GL11.glDisable( GL11.GL_LIGHTING );
-		GL11.glDisable( GL11.GL_TEXTURE_2D );
-		GL11.glEnable( GL11.GL_LINE_SMOOTH );
-		GL11.glDisable( 2929 );
-		GL11.glDepthMask( false );
-		GL11.glColor4d( r, g, b, 0.1825F );
+		GLStateManager.PushMatrix( );
+		GLStateManager.Enable( 3042 );
+		GLStateManager.BlendFunc( 770, 771 );
+		GLStateManager.LineWidth( 1.F );
+		GLStateManager.Disable( GLStateManager.GL_LIGHTING );
+		GLStateManager.Disable( GLStateManager.GL_TEXTURE_2D );
+		GLStateManager.Enable( GLStateManager.GL_LINE_SMOOTH );
+		GLStateManager.Disable( 2929 );
+		GLStateManager.DepthMask( false );
+		GLStateManager.Color4d( r, g, b, 0.1825F );
 		drawBoundingBox( bb );
-		GL11.glColor4d( r, g, b, 1.0F );
+		GLStateManager.Color4d( r, g, b, 1.0F );
 		drawOutlinedBoundingBox( bb );
-        GL11.glColor4d( 255, 255, 255, 0.5F );
-        GL11.glDepthMask( true );
-		GL11.glLineWidth( 2.0F );
-        GL11.glEnable( 2929 );
-		GL11.glDisable( GL11.GL_LINE_SMOOTH );
-		GL11.glEnable( GL11.GL_TEXTURE_2D );
-		GL11.glEnable( GL11.GL_LIGHTING );
-		GL11.glDisable( 3042 );
-		GL11.glPopMatrix( );
+        GLStateManager.Color4d( 255, 255, 255, 0.5F );
+        GLStateManager.DepthMask( true );
+		GLStateManager.LineWidth( 2.0F );
+        GLStateManager.Enable( 2929 );
+		GLStateManager.Disable( GLStateManager.GL_LINE_SMOOTH );
+		GLStateManager.Enable( GLStateManager.GL_TEXTURE_2D );
+		GLStateManager.Enable( GLStateManager.GL_LIGHTING );
+		GLStateManager.Disable( 3042 );
+		GLStateManager.PopMatrix( );
 		
 		Minecraft.getMinecraft( ).entityRenderer.enableLightmap(/* 0 */);
 	}
@@ -610,4 +610,3 @@ class Point3dCompare implements Comparator<Point3d>{
         }
 	}
 }
-
