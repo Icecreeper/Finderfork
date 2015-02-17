@@ -16,7 +16,7 @@ import javax.vecmath.Point3d;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.util.BlockPos;
 import org.lwjgl.input.Keyboard;
-import org.lwjgl.opengl.GLStateManager;
+import net.minecraft.client.renderer.GLStateManager;
 
 
 import org.lwjgl.util.vector.Vector3f;
