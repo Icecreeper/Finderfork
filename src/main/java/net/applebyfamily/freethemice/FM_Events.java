@@ -403,17 +403,17 @@ public class FM_Events {
 		GL11.glPushMatrix( );
 		GL11.glEnable( 3042 );
 		GL11.glBlendFunc( 770, 771 );
-		GL11.glLineWidth( 1.5F );
+		GL11.glLineWidth( 1.F );
 		GL11.glDisable( GL11.GL_LIGHTING );
 		GL11.glDisable( GL11.GL_TEXTURE_2D );
 		GL11.glEnable( GL11.GL_LINE_SMOOTH );
 		GL11.glDisable( 2929 );
 		GL11.glDepthMask( false );
-		GL11.glColor4d( r, g, b, 0.1825F );
+		GL11.glColor4f((float) r,(float) g,(float) b, 0.1825F );
 		drawBoundingBox( bb );
-		GL11.glColor4d( r, g, b, 1.0F );
+		GL11.glColor4f((float) r,(float) g,(float) b, 1.0F );
 		drawOutlinedBoundingBox( bb );
-        GL11.glColor4d( 255, 255, 255, 0.5F );
+        GL11.glColor4f( 255, 255, 255, 0.5F );
         GL11.glDepthMask( true );
 		GL11.glLineWidth( 2.0F );
         GL11.glEnable( 2929 );
@@ -610,4 +610,3 @@ class Point3dCompare implements Comparator<Point3d>{
         }
 	}
 }
-
