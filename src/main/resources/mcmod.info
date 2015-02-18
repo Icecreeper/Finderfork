@@ -1,13 +1,13 @@
 [
 {
-  "modid": "Finder Mod",
+  "modid": "FinderMod",
   "name": "Finder Mod",
   "description": "Finds stuff.",
   "version": "${version}",
   "mcversion": "${mcversion}",
-  "url": "",
-  "updateUrl": "",
-  "authors": ["freethemice","liach"],
+  "url": "https://github.com/freethemice/FinderMod/",
+  "updateUrl": "https://github.com/Minecraft-GoodTime/FinderFork/",
+  "authors": ["freethemice"],
   "credits": "All rights reserved",
   "logoFile": "",
   "screenshots": [],

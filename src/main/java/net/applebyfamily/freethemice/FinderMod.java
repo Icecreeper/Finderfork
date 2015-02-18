@@ -76,7 +76,7 @@ public class FinderMod {
     
     
     //@SidedProxy(clientSide = "net.applebyfamily.freethemice.ClientProxy", serverSide = "net.applebyfamily.freethemice.CommonProxy")
-    public static ClientProxy proxy;
+    //public static ClientProxy proxy;
 
 
     public void sendChatMessage(String textout)
