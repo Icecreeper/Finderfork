@@ -6,9 +6,9 @@
   "version": "${version}",
   "mcversion": "${mcversion}",
   "url": "https://github.com/freethemice/FinderMod/",
-  "updateUrl": "https://github.com/Minecraft-GoodTime/FinderFork/",
+  "updateUrl": "https://github.com/liach/FinderFork/",
   "authors": ["freethemice"],
-  "credits": "All rights reserved",
+  "credits": "freethemice created for Minecraft 1.7.2, liach maintained to Minecraft 1.8",
   "logoFile": "",
   "screenshots": [],
   "dependencies": []
